@@ -38,8 +38,10 @@ app.get('/add-task', async (req,res) =>{
           rdfs:comment 'Test task to try the service';
           task:numberOfRetries 0;
           adms:status ${sparqlEscapeUri(statusUris['not-started'])};
-          prov:used <http://lblod.data.gift/test/fileTest1234>.
-          <share://example.ttl> nie:dataSource <http://lblod.data.gift/test/fileTest1234>.
+          prov:used <http://lblod.data.gift/test/fileTest1>;
+          prov:used <http://lblod.data.gift/test/fileTest2>.
+          <share://example.ttl> nie:dataSource <http://lblod.data.gift/test/fileTest1>.
+          <share://example2.ttl> nie:dataSource <http://lblod.data.gift/test/fileTest2>.
       }
     }
   `);
@@ -62,13 +64,14 @@ app.post('/new-ttl', async (req, res) => {
         ?physicalFileUri nie:dataSource ?logicalFileUri.
       }
     `);
-    const fileUri = queryResult.results.bindings[0].physicalFileUri.value;
-    const filePath = `share/${fileUri.substring(8)}`;
-    console.log(filePath);
     await changeTaskStatus(taskUri, 'started');
-    const resultFilePath = await convertTtlToDelta(filePath);
-    console.log(resultFilePath);
-    await addResultFileToTask(taskUri, resultFilePath);
+    const fileUris = queryResult.results.bindings
+    for(let i = 0; i<fileUris.length; i++) {
+      const fileUri = fileUris[i].physicalFileUri.value;
+      const filePath = `share/${fileUri.substring(8)}`;   
+      const resultFilePath = await convertTtlToDelta(filePath);
+      await addResultFileToTask(taskUri, resultFilePath);
+    }
     await changeTaskStatus(taskUri, 'completed');
   } else {
     res.end('Not relevant ttl');
