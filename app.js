@@ -19,10 +19,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
 app.use(bodyParser.json());
 
-app.get('/import-ttl', async (req,res) => {
-  await convertTtlToDelta('example.ttl');
-  res.end('ok');
-});
 
 app.get('/add-task', async (req,res) =>{
   await query(`
@@ -54,7 +50,6 @@ app.post('/new-ttl', async (req, res) => {
   const statusTriple = inserts.find((insert) => insert.predicate.value === 'http://www.w3.org/ns/adms#status');
   const taskStatus = statusTriple.object.value;
   const taskUri = statusTriple.subject.value;
-  console.log(taskStatus);
   if(taskStatus === 'http://redpencil.data.gift/ttl-to-delta-tasks/8C7E9155-B467-49A4-B047-7764FE5401F7') {
     const queryResult = await query(`
       PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -65,7 +60,7 @@ app.post('/new-ttl', async (req, res) => {
       }
     `);
     await changeTaskStatus(taskUri, 'started');
-    const fileUris = queryResult.results.bindings
+    const fileUris = queryResult.results.bindings;
     for(let i = 0; i<fileUris.length; i++) {
       const fileUri = fileUris[i].physicalFileUri.value;
       const filePath = `share/${fileUri.substring(8)}`;   
@@ -73,6 +68,7 @@ app.post('/new-ttl', async (req, res) => {
       await addResultFileToTask(taskUri, resultFilePath);
     }
     await changeTaskStatus(taskUri, 'completed');
+    res.end('Task completed succesfully');
   } else {
     res.end('Not relevant ttl');
   }
@@ -217,7 +213,6 @@ async function createFileOnDisk({name, format, size, extension, created, locatio
 }
 
 app.get('/test', async (req, res) => {
-  console.log('hello');
   res.send('Hello World');
 });
 
