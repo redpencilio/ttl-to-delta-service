@@ -63,7 +63,7 @@ app.post('/new-ttl', async (req, res) => {
     const fileUris = queryResult.results.bindings;
     for(let i = 0; i<fileUris.length; i++) {
       const fileUri = fileUris[i].physicalFileUri.value;
-      const filePath = `share/${fileUri.substring(8)}`;   
+      const filePath = fileUri.replace('share://', '/share/');
       const resultFilePath = await convertTtlToDelta(filePath);
       await addResultFileToTask(taskUri, resultFilePath);
     }
@@ -97,7 +97,7 @@ async function changeTaskStatus(taskUri, status) {
 }
 
 async function convertTtlToDelta(filePath) {
-  const ttl = fs.readFileSync(path.join(__dirname, filePath), {encoding: 'utf-8'});
+  const ttl = fs.readFileSync(filePath, {encoding: 'utf-8'});
   const quads = await parseTtl(ttl);
   const inserts = convertQuadsToDelta(quads);
   const deltaMessage = {
@@ -155,7 +155,7 @@ function convertToDeltaFormat(quadPart) {
 
 async function addResultFileToTask(taskUri, filePath) {
   const fileStats = fs.statSync(path.join(__dirname, filePath));
-  const location = filePath.split('/')[1];
+  const location = filePath.split('/').pop();
   const [fileName, fileExtension] = location.split('.');
   const fileInfo = {
     name: fileName,
