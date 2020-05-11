@@ -107,7 +107,7 @@ async function convertTtlToDelta(filePath) {
     }
   };
   const resultFilePath = `${filePath.split('.')[0]}.delta`;
-  fs.writeFileSync(path.join(__dirname, resultFilePath), JSON.stringify(deltaMessage), {encoding: 'utf-8'});
+  fs.writeFileSync(resultFilePath, JSON.stringify(deltaMessage), {encoding: 'utf-8'});
   return resultFilePath;
 }
 
@@ -154,7 +154,7 @@ function convertToDeltaFormat(quadPart) {
 }
 
 async function addResultFileToTask(taskUri, filePath) {
-  const fileStats = fs.statSync(path.join(__dirname, filePath));
+  const fileStats = fs.statSync(filePath);
   const location = filePath.split('/').pop();
   const [fileName, fileExtension] = location.split('.');
   const fileInfo = {
