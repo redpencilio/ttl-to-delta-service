@@ -1,7 +1,6 @@
 import { app, errorHandler } from 'mu';
 import bodyParser from 'body-parser';
 import fs from 'fs';
-import path from 'path';
 import flatten from 'lodash.flatten';
 import { Parser } from 'n3';
 import { sparqlEscapeUri, sparqlEscapeString, sparqlEscapeInt, sparqlEscapeDateTime, uuid, query } from 'mu';
@@ -18,31 +17,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 // parse application/json
 app.use(bodyParser.json());
-
-
-app.get('/add-task', async (req,res) =>{
-  await query(`
-    PREFIX adms: <http://www.w3.org/ns/adms#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
-    PREFIX prov: <http://www.w3.org/ns/prov#>
-    PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
-    INSERT DATA{
-      GRAPH <http://mu.semte.ch/graphs/public> {
-        <http://lblod.data.gift/test/1234> a <http://mu.semte.ch/vocabularies/ext/TtlToDeltaTask>;
-          rdfs:label 'TestTask';
-          rdfs:comment 'Test task to try the service';
-          task:numberOfRetries 0;
-          adms:status ${sparqlEscapeUri(statusUris['not-started'])};
-          prov:used <http://lblod.data.gift/test/fileTest1>;
-          prov:used <http://lblod.data.gift/test/fileTest2>.
-          <share://example.ttl> nie:dataSource <http://lblod.data.gift/test/fileTest1>.
-          <share://example2.ttl> nie:dataSource <http://lblod.data.gift/test/fileTest2>.
-      }
-    }
-  `);
-  res.end('ok');
-});
 
 app.post('/new-ttl', async (req, res) => {
   const delta = req.body;
