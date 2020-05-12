@@ -24,7 +24,7 @@ app.post('/new-ttl', async (req, res) => {
   const statusTriple = inserts.find((insert) => insert.predicate.value === 'http://www.w3.org/ns/adms#status');
   const taskStatus = statusTriple.object.value;
   const taskUri = statusTriple.subject.value;
-  if(taskStatus === 'http://redpencil.data.gift/ttl-to-delta-tasks/8C7E9155-B467-49A4-B047-7764FE5401F7') {
+  if(taskStatus === statusUris['not-started']) {
     const queryResult = await query(`
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
@@ -56,7 +56,7 @@ async function changeTaskStatus(taskUri, status) {
     DELETE WHERE 
     {
       GRAPH <http://mu.semte.ch/graphs/public> {
-          <http://lblod.data.gift/test/1234> adms:status ?status
+        ${sparqlEscapeUri(taskUri)} adms:status ?status
       }
     }
   `);
