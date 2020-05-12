@@ -35,14 +35,20 @@ app.post('/new-ttl', async (req, res) => {
     `);
     await changeTaskStatus(taskUri, 'started');
     const fileUris = queryResult.results.bindings;
-    for(let i = 0; i<fileUris.length; i++) {
-      const fileUri = fileUris[i].physicalFileUri.value;
-      const filePath = fileUri.replace('share://', '/share/');
-      const resultFilePath = await convertTtlToDelta(filePath);
-      await addResultFileToTask(taskUri, resultFilePath);
+    try {
+      for(let i = 0; i<fileUris.length; i++) {
+        const fileUri = fileUris[i].physicalFileUri.value;
+        const filePath = fileUri.replace('share://', '/share/');
+        const resultFilePath = await convertTtlToDelta(filePath);
+        await addResultFileToTask(taskUri, resultFilePath);
+      }
+      await changeTaskStatus(taskUri, 'completed');
+      res.end('Task completed succesfully');
+    } catch(e) {
+      console.log(e);
+      await changeTaskStatus(taskUri, 'error');
+      res.end('Task failed');
     }
-    await changeTaskStatus(taskUri, 'completed');
-    res.end('Task completed succesfully');
   } else {
     res.end('Not relevant ttl');
   }
