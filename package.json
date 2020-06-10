@@ -2,8 +2,12 @@
   "name": "ttl-to-delta-service",
   "version": "0.0.0",
   "main": "app.js",
-  "repository": "https://github.com/redpencilio/ttl-to-delta-service",
-  "author": "Oscar <lagartoverde97@gmail.com>",
+  "description": "Microservice that converts TTL files to files in the mu-semtech delta format",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/redpencilio/ttl-to-delta-service.git"
+  },
+  "author": "redpencil.io",
   "license": "MIT",
   "dependencies": {
     "forking-store": "^1.1.0",
