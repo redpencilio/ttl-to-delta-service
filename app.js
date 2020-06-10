@@ -63,7 +63,7 @@ app.post('/delta', async (req, res) => {
 
 async function changeTaskStatus(taskUri, status) {
   const statusUri = statusUris[status];
-  await query(`
+  await update(`
     PREFIX adms: <http://www.w3.org/ns/adms#>
     DELETE WHERE
     {
@@ -72,7 +72,7 @@ async function changeTaskStatus(taskUri, status) {
       }
     }
   `);
-  await query(`
+  await update(`
     PREFIX adms: <http://www.w3.org/ns/adms#>
     INSERT DATA {
       GRAPH <${TASK_GRAPH}> {
@@ -152,7 +152,7 @@ async function addResultFileToTask(taskUri, filePath) {
     location: location
   };
   const file = await createFileOnDisk(fileInfo);
-  await query(`
+  await update(`
     PREFIX prov: <http://www.w3.org/ns/prov#>
     INSERT DATA {
       GRAPH <${TASK_GRAPH}> {
@@ -167,7 +167,7 @@ async function createFileOnDisk({name, format, size, extension, created, locatio
   const logicalFileURI = `http://data.lblod.info/files/${logicalFileUuid}`;
   const physicalFileUuid = uuid();
   const physicalFileURI = `share://${location}`;
-  const queryString = `
+  await update(`
     PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
     PREFIX dct: <http://purl.org/dc/terms/>
     PREFIX dbpedia: <http://dbpedia.org/ontology/>
@@ -193,8 +193,7 @@ async function createFileOnDisk({name, format, size, extension, created, locatio
           nie:dataSource ${sparqlEscapeUri(logicalFileURI)}.
       }
     }
-  `;
-  await query(queryString);
+  `);
   return logicalFileURI;
 }
 
