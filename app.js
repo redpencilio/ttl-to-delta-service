@@ -18,7 +18,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
 app.use(bodyParser.json());
 
-app.post('/new-ttl', async (req, res) => {
+app.post('/delta', async (req, res) => {
   const delta = req.body;
   const inserts = flatten(delta.map(changeSet => changeSet.inserts));
   const statusTriple = inserts.find((insert) => insert.predicate.value === 'http://www.w3.org/ns/adms#status');
