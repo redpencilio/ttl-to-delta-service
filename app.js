@@ -5,6 +5,9 @@ import flatten from 'lodash.flatten';
 import { Parser } from 'n3';
 import { sparqlEscapeUri, sparqlEscapeString, sparqlEscapeInt, sparqlEscapeDateTime, uuid, query } from 'mu';
 
+const TASK_GRAPH = process.env.TASK_GRAPH || 'http://mu.semte.ch/graphs/public';
+const FILE_GRAPH = process.env.FILE_GRAPH || 'http://mu.semte.ch/graphs/public';
+
 const statusUris = {
   'not-started': 'http://redpencil.data.gift/ttl-to-delta-tasks/8C7E9155-B467-49A4-B047-7764FE5401F7',
   'started': 'http://redpencil.data.gift/ttl-to-delta-tasks/B9418001-7DFE-40EF-8950-235349C2C7D1',
@@ -28,9 +31,12 @@ app.post('/delta', async (req, res) => {
     const queryResult = await query(`
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
-      SELECT ?physicalFileUri WHERE {
-        ${sparqlEscapeUri(taskUri)} prov:used ?logicalFileUri.
-        ?physicalFileUri nie:dataSource ?logicalFileUri.
+      SELECT ?physicalFileUri
+      WHERE {
+        GRAPH <${TASK_GRAPH}> {
+          ${sparqlEscapeUri(taskUri)} prov:used ?logicalFileUri.
+          ?physicalFileUri nie:dataSource ?logicalFileUri.
+        }
       }
     `);
     await changeTaskStatus(taskUri, 'started');
@@ -58,9 +64,9 @@ async function changeTaskStatus(taskUri, status) {
   const statusUri = statusUris[status];
   await query(`
     PREFIX adms: <http://www.w3.org/ns/adms#>
-    DELETE WHERE 
+    DELETE WHERE
     {
-      GRAPH <http://mu.semte.ch/graphs/public> {
+      GRAPH <${TASK_GRAPH}> {
         ${sparqlEscapeUri(taskUri)} adms:status ?status
       }
     }
@@ -68,7 +74,7 @@ async function changeTaskStatus(taskUri, status) {
   await query(`
     PREFIX adms: <http://www.w3.org/ns/adms#>
     INSERT DATA {
-      GRAPH <http://mu.semte.ch/graphs/public> {
+      GRAPH <${TASK_GRAPH}> {
         ${sparqlEscapeUri(taskUri)} adms:status ${sparqlEscapeUri(statusUri)}
       }
     }
@@ -148,7 +154,7 @@ async function addResultFileToTask(taskUri, filePath) {
   await query(`
     PREFIX prov: <http://www.w3.org/ns/prov#>
     INSERT DATA {
-      GRAPH <http://mu.semte.ch/graphs/public> {
+      GRAPH <${TASK_GRAPH}> {
         ${sparqlEscapeUri(taskUri)} prov:generated ${sparqlEscapeUri(file)}
       }
     }
@@ -168,7 +174,7 @@ async function createFileOnDisk({name, format, size, extension, created, locatio
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 
     INSERT DATA {
-      GRAPH <http://mu.semte.ch/graphs/public> {
+      GRAPH <${FILE_GRAPH}> {
         ${sparqlEscapeUri(logicalFileURI)} a nfo:FileDataObject;
           mu:uuid ${sparqlEscapeString(logicalFileUuid)};
           nfo:fileName ${sparqlEscapeString(name)};
