@@ -3,7 +3,8 @@ import bodyParser from 'body-parser';
 import fs from 'fs';
 import flatten from 'lodash.flatten';
 import { Parser } from 'n3';
-import { sparqlEscapeUri, sparqlEscapeString, sparqlEscapeInt, sparqlEscapeDateTime, uuid, query } from 'mu';
+import { querySudo as query, updateSudo as update } from '@lblod/mu-auth-sudo';
+import { sparqlEscapeUri, sparqlEscapeString, sparqlEscapeInt, sparqlEscapeDateTime, uuid } from 'mu';
 
 const TASK_GRAPH = process.env.TASK_GRAPH || 'http://mu.semte.ch/graphs/public';
 const FILE_GRAPH = process.env.FILE_GRAPH || 'http://mu.semte.ch/graphs/public';
