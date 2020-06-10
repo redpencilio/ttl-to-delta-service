@@ -18,10 +18,13 @@ app.use(bodyParser.json());
 app.post('/delta', async (req, res) => {
   const delta = req.body;
   const inserts = flatten(delta.map(changeSet => changeSet.inserts));
-  const statusTriple = inserts.find((insert) => insert.predicate.value === 'http://www.w3.org/ns/adms#status');
-  const taskStatus = statusTriple.object.value;
-  const taskUri = statusTriple.subject.value;
-  if(taskStatus === statusUris['not-started']) {
+  const statusTriple = inserts.find((t) => {
+    return t.predicate.value == 'http://www.w3.org/ns/adms#status'
+      && t.object.value == statusUris['not-started'];
+  });
+
+  if (statusTriple) {
+    const taskUri = statusTriple.subject.value;
     const queryResult = await query(`
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
@@ -47,9 +50,8 @@ app.post('/delta', async (req, res) => {
       res.end('Task failed');
     }
   } else {
-    res.end('Not relevant ttl');
+    res.end('No TTL to delta task found in delta message.');
   }
-
 });
 
 async function changeTaskStatus(taskUri, status) {
