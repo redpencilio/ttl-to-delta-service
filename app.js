@@ -9,12 +9,10 @@ import { sparqlEscapeUri, sparqlEscapeString, sparqlEscapeInt, sparqlEscapeDateT
 const TASK_GRAPH = process.env.TASK_GRAPH || 'http://mu.semte.ch/graphs/public';
 const FILE_GRAPH = process.env.FILE_GRAPH || 'http://mu.semte.ch/graphs/public';
 
-const statusUris = {
-  'not-started': 'http://redpencil.data.gift/ttl-to-delta-tasks/8C7E9155-B467-49A4-B047-7764FE5401F7',
-  'started': 'http://redpencil.data.gift/ttl-to-delta-tasks/B9418001-7DFE-40EF-8950-235349C2C7D1',
-  'completed': 'http://redpencil.data.gift/ttl-to-delta-tasks/89E2E19A-91D0-4932-9720-4D34E62B89A1',
-  'error': 'http://redpencil.data.gift/ttl-to-delta-tasks/B740E2A0-F8CC-443E-A6BE-248393A0A9AE',
-};
+const NOT_STARTED_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/8C7E9155-B467-49A4-B047-7764FE5401F7';
+const STARTED_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/B9418001-7DFE-40EF-8950-235349C2C7D1';
+const COMPLETED_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/89E2E19A-91D0-4932-9720-4D34E62B89A1';
+const ERROR_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/B740E2A0-F8CC-443E-A6BE-248393A0A9AE';
 
 // parse application/json
 app.use(bodyParser.json());
@@ -24,11 +22,12 @@ app.post('/delta', async (req, res) => {
   const inserts = flatten(delta.map(changeSet => changeSet.inserts));
   const statusTriple = inserts.find((t) => {
     return t.predicate.value == 'http://www.w3.org/ns/adms#status'
-      && t.object.value == statusUris['not-started'];
+      && t.object.value == NOT_STARTED_STATUS;
   });
 
   if (statusTriple) {
     const taskUri = statusTriple.subject.value;
+    await changeTaskStatus(taskUri, NOT_STARTED_STATUS);
     const queryResult = await query(`
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
@@ -40,20 +39,19 @@ app.post('/delta', async (req, res) => {
         }
       }
     `);
-    await changeTaskStatus(taskUri, 'started');
     const fileUris = queryResult.results.bindings;
     try {
-      for(let i = 0; i<fileUris.length; i++) {
+      for (let i = 0; i < fileUris.length; i++) {
         const fileUri = fileUris[i].physicalFileUri.value;
         const filePath = fileUri.replace('share://', '/share/');
-        const resultFilePath = await convertTtlToDelta(filePath);
-        await addResultFileToTask(taskUri, resultFilePath);
+        const deltaFilePath = await convertTtlToDelta(filePath);
+        await addResultFileToTask(taskUri, deltaFilePath);
       }
-      await changeTaskStatus(taskUri, 'completed');
+      await changeTaskStatus(taskUri, COMPLETED_STATUS);
       res.end('Task completed succesfully');
     } catch(e) {
       console.log(e);
-      await changeTaskStatus(taskUri, 'error');
+      await changeTaskStatus(taskUri, ERROR_STATUS);
       res.end('Task failed');
     }
   } else {
@@ -62,7 +60,6 @@ app.post('/delta', async (req, res) => {
 });
 
 async function changeTaskStatus(taskUri, status) {
-  const statusUri = statusUris[status];
   await update(`
     PREFIX adms: <http://www.w3.org/ns/adms#>
     DELETE WHERE
@@ -76,7 +73,7 @@ async function changeTaskStatus(taskUri, status) {
     PREFIX adms: <http://www.w3.org/ns/adms#>
     INSERT DATA {
       GRAPH <${TASK_GRAPH}> {
-        ${sparqlEscapeUri(taskUri)} adms:status ${sparqlEscapeUri(statusUri)}
+        ${sparqlEscapeUri(taskUri)} adms:status ${sparqlEscapeUri(status)}
       }
     }
   `);
