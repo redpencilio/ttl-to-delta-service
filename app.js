@@ -80,9 +80,9 @@ async function changeTaskStatus(taskUri, status) {
 }
 
 async function convertTtlToDelta(filePath) {
-  const ttl = fs.readFileSync(filePath, {encoding: 'utf-8'});
-  const quads = await parseTtl(ttl);
-  const inserts = convertQuadsToDelta(quads);
+  const ttl = fs.readFileSync(filePath, { encoding: 'utf-8' });
+  const triples = await parseTtl(ttl);
+  const inserts = convertTriplesToDelta(triples);
   const deltaMessage = {
     delta: {
       inserts,
@@ -90,49 +90,51 @@ async function convertTtlToDelta(filePath) {
     }
   };
   const resultFilePath = `${filePath.split('.')[0]}.delta`;
-  fs.writeFileSync(resultFilePath, JSON.stringify(deltaMessage), {encoding: 'utf-8'});
+  fs.writeFileSync(resultFilePath, JSON.stringify(deltaMessage), { encoding: 'utf-8' });
   return resultFilePath;
 }
 
 function parseTtl(file) {
   return (new Promise((resolve, reject) => {
     const parser = new Parser();
-    const quads = [];
-    parser.parse(file, (error, quad) => {
-      if(error) {
-        return reject(error);
-      }
-      if (quad) {
-        quads.push(quad);
+    const triples = [];
+    parser.parse(file, (error, triple) => {
+      if (error) {
+        reject(error);
+      } else if (triple) {
+        triples.push(triple);
       } else {
-        resolve(quads);
+        resolve(triples);
       }
     });
   }));
 }
 
-function convertQuadsToDelta(quads) {
-  return quads.map((quad) => {
+function convertTriplesToDelta(triples) {
+  return triples.map((triple) => {
     return {
-      subject: convertToDeltaFormat(quad.subject),
-      predicate: convertToDeltaFormat(quad.predicate),
-      object: convertToDeltaFormat(quad.object),
+      subject: convertToDeltaFormat(triple.subject),
+      predicate: convertToDeltaFormat(triple.predicate),
+      object: convertToDeltaFormat(triple.object),
     };
   });
 }
 
-function convertToDeltaFormat(quadPart) {
-  if(quadPart.termType == 'NamedNode') {
+function convertToDeltaFormat(node) {
+  if (node.termType == 'NamedNode') {
     return {
       type: 'uri',
-      value: quadPart.value
+      value: node.value
     };
-  } else if(quadPart.termType == 'Literal') {
+  } else if (node.termType == 'Literal') {
     return {
       type: 'literal',
-      value: quadPart.value,
-      datatype: quadPart.datatype.value
+      value: node.value,
+      datatype: node.datatype.value
     };
+  } else {
+    console.log(`Unknown term-type '${node.termType}'`);
+    throw new Error(`Unknown term-type '${node.termType}'`);
   }
 }
 
