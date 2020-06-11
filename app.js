@@ -10,9 +10,9 @@ const TASK_GRAPH = process.env.TASK_GRAPH || 'http://mu.semte.ch/graphs/public';
 const FILE_GRAPH = process.env.FILE_GRAPH || 'http://mu.semte.ch/graphs/public';
 
 const NOT_STARTED_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/8C7E9155-B467-49A4-B047-7764FE5401F7';
-const STARTED_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/B9418001-7DFE-40EF-8950-235349C2C7D1';
-const COMPLETED_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/89E2E19A-91D0-4932-9720-4D34E62B89A1';
-const ERROR_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/B740E2A0-F8CC-443E-A6BE-248393A0A9AE';
+const ONGOING_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/B9418001-7DFE-40EF-8950-235349C2C7D1';
+const SUCCESSFUL_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/89E2E19A-91D0-4932-9720-4D34E62B89A1';
+const FAILURE_STATUS = 'http://redpencil.data.gift/ttl-to-delta-tasks/B740E2A0-F8CC-443E-A6BE-248393A0A9AE';
 
 // parse application/json
 app.use(bodyParser.json());
@@ -47,11 +47,11 @@ app.post('/delta', async (req, res) => {
         const deltaFilePath = await convertTtlToDelta(filePath);
         await addResultFileToTask(taskUri, deltaFilePath);
       }
-      await changeTaskStatus(taskUri, COMPLETED_STATUS);
+      await changeTaskStatus(taskUri, SUCCESSFUL_STATUS);
       res.end('Task completed succesfully');
     } catch(e) {
       console.log(e);
-      await changeTaskStatus(taskUri, ERROR_STATUS);
+      await changeTaskStatus(taskUri, FAILURE_STATUS);
       res.end('Task failed');
     }
   } else {

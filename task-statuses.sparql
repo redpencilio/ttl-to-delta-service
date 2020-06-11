@@ -1,18 +1,16 @@
-
 INSERT DATA {
   GRAPH <http://mu.semte.ch/graphs/public> {
     <http://redpencil.data.gift/ttl-to-delta-tasks/8C7E9155-B467-49A4-B047-7764FE5401F7> a ext:TtlToDeltaTaskStatus;
-      rdfs:label 'not-started';
+      rdfs:label 'Not started';
       rdfs:comment 'The task has not started yet'.
     <http://redpencil.data.gift/ttl-to-delta-tasks/B9418001-7DFE-40EF-8950-235349C2C7D1> a ext:TtlToDeltaTaskStatus;
-      rdfs:label 'started';
-      rdfs:comment 'The task has started'.
+      rdfs:label 'Ongoing';
+      rdfs:comment 'The task is ongoing'.
     <http://redpencil.data.gift/ttl-to-delta-tasks/89E2E19A-91D0-4932-9720-4D34E62B89A1> a ext:TtlToDeltaTaskStatus;
-      rdfs:label 'completed';
+      rdfs:label 'Successful';
       rdfs:comment 'The task has been completed without errors'.
     <http://redpencil.data.gift/ttl-to-delta-tasks/B740E2A0-F8CC-443E-A6BE-248393A0A9AE> a ext:TtlToDeltaTaskStatus;
-      rdfs:label 'error';
-      rdfs:comment 'The microservice found an error while processing the task'.
-    
+      rdfs:label 'Failure';
+      rdfs:comment 'The task failed to complete'.
   }
 }
