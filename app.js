@@ -20,15 +20,16 @@ app.use(bodyParser.json());
 app.post('/delta', async (req, res) => {
   const delta = req.body;
   const inserts = flatten(delta.map(changeSet => changeSet.inserts));
-  const statusTriple = inserts.find((t) => {
+  const statusTriples = inserts.filter((t) => {
     return t.predicate.value == 'http://www.w3.org/ns/adms#status'
       && t.object.value == NOT_STARTED_STATUS;
   });
 
-  if (statusTriple) {
-    const taskUri = statusTriple.subject.value;
-    await changeTaskStatus(taskUri, NOT_STARTED_STATUS);
-    const queryResult = await query(`
+  if (statusTriples.length) {
+    for (let statusTriple of statusTriples) {
+      const taskUri = statusTriple.subject.value;
+      await changeTaskStatus(taskUri, NOT_STARTED_STATUS);
+      const queryResult = await query(`
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
       SELECT ?physicalFileUri
@@ -37,22 +38,22 @@ app.post('/delta', async (req, res) => {
           ${sparqlEscapeUri(taskUri)} prov:used ?logicalFileUri.
           ?physicalFileUri nie:dataSource ?logicalFileUri.
         }
+      }`);
+      const fileUris = queryResult.results.bindings;
+      try {
+        for (let i = 0; i < fileUris.length; i++) {
+          const fileUri = fileUris[i].physicalFileUri.value;
+          const filePath = fileUri.replace('share://', '/share/');
+          const deltaFilePath = await convertTtlToDelta(filePath);
+          await addResultFileToTask(taskUri, deltaFilePath);
+        }
+        await changeTaskStatus(taskUri, SUCCESSFUL_STATUS);
+        res.end('Task completed succesfully');
+      } catch(e) {
+        console.log(e);
+        await changeTaskStatus(taskUri, FAILURE_STATUS);
+        res.end('Task failed');
       }
-    `);
-    const fileUris = queryResult.results.bindings;
-    try {
-      for (let i = 0; i < fileUris.length; i++) {
-        const fileUri = fileUris[i].physicalFileUri.value;
-        const filePath = fileUri.replace('share://', '/share/');
-        const deltaFilePath = await convertTtlToDelta(filePath);
-        await addResultFileToTask(taskUri, deltaFilePath);
-      }
-      await changeTaskStatus(taskUri, SUCCESSFUL_STATUS);
-      res.end('Task completed succesfully');
-    } catch(e) {
-      console.log(e);
-      await changeTaskStatus(taskUri, FAILURE_STATUS);
-      res.end('Task failed');
     }
   } else {
     res.end('No TTL to delta task found in delta message.');
