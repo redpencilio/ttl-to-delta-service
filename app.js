@@ -1,10 +1,10 @@
-import { app, errorHandler } from 'mu';
+import { app, errorHandler, sparqlEscapeUri, sparqlEscapeString, sparqlEscapeInt, sparqlEscapeDateTime, uuid } from 'mu';
 import bodyParser from 'body-parser';
 import fs from 'fs';
+import path from 'path';
 import flatten from 'lodash.flatten';
 import { Parser } from 'n3';
 import { querySudo as query, updateSudo as update } from '@lblod/mu-auth-sudo';
-import { sparqlEscapeUri, sparqlEscapeString, sparqlEscapeInt, sparqlEscapeDateTime, uuid } from 'mu';
 
 const TASK_GRAPH = process.env.TASK_GRAPH || 'http://mu.semte.ch/graphs/public';
 const FILE_GRAPH = process.env.FILE_GRAPH || 'http://mu.semte.ch/graphs/public';
@@ -89,9 +89,11 @@ async function convertTtlToDelta(filePath) {
       deletes: []
     }
   };
-  const resultFilePath = `${filePath.split('.')[0]}.delta`;
-  fs.writeFileSync(resultFilePath, JSON.stringify(deltaMessage), { encoding: 'utf-8' });
-  return resultFilePath;
+  const parsedFilePath = path.parse(filePath);
+  parsedFilePath.ext = 'delta';
+  const deltaFilePath = path.format(parsedFilePath);
+  fs.writeFileSync(deltaFilePath, JSON.stringify(deltaMessage), { encoding: 'utf-8' });
+  return deltaFilePath;
 }
 
 function parseTtl(file) {
@@ -139,61 +141,50 @@ function convertToDeltaFormat(node) {
 }
 
 async function addResultFileToTask(taskUri, filePath) {
+  const fileName = path.basename(filePath);
+  const extension = path.extname(filePath);
+  const format = 'application/json';
   const fileStats = fs.statSync(filePath);
-  const location = filePath.split('/').pop();
-  const [fileName, fileExtension] = location.split('.');
-  const fileInfo = {
-    name: fileName,
-    extension: fileExtension,
-    format: 'application/json',
-    created: new Date(fileStats.birthtime),
-    size: fileStats.size,
-    location: location
-  };
-  const file = await createFileOnDisk(fileInfo);
-  await update(`
-    PREFIX prov: <http://www.w3.org/ns/prov#>
-    INSERT DATA {
-      GRAPH <${TASK_GRAPH}> {
-        ${sparqlEscapeUri(taskUri)} prov:generated ${sparqlEscapeUri(file)}
-      }
-    }
-  `);
-}
+  const created = new Date(fileStats.birthtime);
+  const size = fileStats.size;
 
-async function createFileOnDisk({name, format, size, extension, created, location}) {
   const logicalFileUuid = uuid();
-  const logicalFileURI = `http://data.lblod.info/files/${logicalFileUuid}`;
+  const logicalFileUri = `http://data.lblod.info/files/${logicalFileUuid}`;
   const physicalFileUuid = uuid();
-  const physicalFileURI = `share://${location}`;
+  const physicalFileUri = filePath.replace('/share/', 'share://');
+
   await update(`
     PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
     PREFIX dct: <http://purl.org/dc/terms/>
     PREFIX dbpedia: <http://dbpedia.org/ontology/>
     PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX prov: <http://www.w3.org/ns/prov#>
 
     INSERT DATA {
       GRAPH <${FILE_GRAPH}> {
-        ${sparqlEscapeUri(logicalFileURI)} a nfo:FileDataObject;
+        ${sparqlEscapeUri(logicalFileUri)} a nfo:FileDataObject;
           mu:uuid ${sparqlEscapeString(logicalFileUuid)};
-          nfo:fileName ${sparqlEscapeString(name)};
+          nfo:fileName ${sparqlEscapeString(fileName)};
           dct:format ${sparqlEscapeString(format)};
           nfo:fileSize ${sparqlEscapeInt(size)};
           dbpedia:fileExtension ${sparqlEscapeString(extension)};
           dct:created ${sparqlEscapeDateTime(created)} .
-        ${sparqlEscapeUri(physicalFileURI)} a nfo:FileDataObject;
+        ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
           mu:uuid ${sparqlEscapeString(physicalFileUuid)};
-          nfo:fileName ${sparqlEscapeString(name)};
+          nfo:fileName ${sparqlEscapeString(fileName)};
           dct:format ${sparqlEscapeString(format)};
           nfo:fileSize ${sparqlEscapeInt(size)};
           dbpedia:fileExtension ${sparqlEscapeString(extension)};
           dct:created ${sparqlEscapeDateTime(created)};
-          nie:dataSource ${sparqlEscapeUri(logicalFileURI)}.
+          nie:dataSource ${sparqlEscapeUri(logicalFileUri)}.
+      }
+
+      GRAPH <${TASK_GRAPH}> {
+        ${sparqlEscapeUri(taskUri)} prov:generated ${sparqlEscapeUri(logicalFileUri)}
       }
     }
   `);
-  return logicalFileURI;
 }
 
 app.get('/test', async (req, res) => {
