@@ -26,9 +26,12 @@ app.post('/delta', async (req, res) => {
   });
 
   if (statusTriples.length) {
+    console.log(`Found ${statusTriples.length} TTL to delta tasks.`);
     for (let statusTriple of statusTriples) {
       const taskUri = statusTriple.subject.value;
-      await changeTaskStatus(taskUri, NOT_STARTED_STATUS);
+      // TODO ensure task still exists in NOT_STARTED state
+      console.log(`Starting task <${taskUri}>`);
+      await changeTaskStatus(taskUri, ONGOING_STATUS);
       const queryResult = await query(`
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
@@ -56,28 +59,11 @@ app.post('/delta', async (req, res) => {
       }
     }
   } else {
+    console.log('No TTL to delta task found in delta message.');
     res.end('No TTL to delta task found in delta message.');
   }
 });
 
-async function changeTaskStatus(taskUri, status) {
-  await update(`
-    PREFIX adms: <http://www.w3.org/ns/adms#>
-    DELETE WHERE
-    {
-      GRAPH <${TASK_GRAPH}> {
-        ${sparqlEscapeUri(taskUri)} adms:status ?status
-      }
-    }
-  `);
-  await update(`
-    PREFIX adms: <http://www.w3.org/ns/adms#>
-    INSERT DATA {
-      GRAPH <${TASK_GRAPH}> {
-        ${sparqlEscapeUri(taskUri)} adms:status ${sparqlEscapeUri(status)}
-      }
-    }
-  `);
 }
 
 async function convertTtlToDelta(filePath) {
@@ -183,6 +169,26 @@ async function addResultFileToTask(taskUri, filePath) {
 
       GRAPH <${TASK_GRAPH}> {
         ${sparqlEscapeUri(taskUri)} prov:generated ${sparqlEscapeUri(logicalFileUri)}
+      }
+    }
+  `);
+}
+
+async function changeTaskStatus(taskUri, status) {
+  await update(`
+    PREFIX adms: <http://www.w3.org/ns/adms#>
+    DELETE WHERE
+    {
+      GRAPH <${TASK_GRAPH}> {
+        ${sparqlEscapeUri(taskUri)} adms:status ?status
+      }
+    }
+  `);
+  await update(`
+    PREFIX adms: <http://www.w3.org/ns/adms#>
+    INSERT DATA {
+      GRAPH <${TASK_GRAPH}> {
+        ${sparqlEscapeUri(taskUri)} adms:status ${sparqlEscapeUri(status)}
       }
     }
   `);
