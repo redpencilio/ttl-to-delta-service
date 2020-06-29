@@ -141,7 +141,7 @@ async function addResultFileToTask(taskUri, filePath) {
   const size = fileStats.size;
 
   const logicalFileUuid = uuid();
-  const logicalFileUri = `http://data.lblod.info/files/${logicalFileUuid}`;
+  const logicalFileUri = `http://redpencil.data.gift/files/${logicalFileUuid}`;
   const physicalFileUuid = uuid();
   const physicalFileUri = filePath.replace('/share/', 'share://');
 
