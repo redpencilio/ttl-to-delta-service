@@ -46,9 +46,10 @@ app.post('/delta', async (req, res) => {
       try {
         for (let i = 0; i < fileUris.length; i++) {
           const fileUri = fileUris[i].physicalFileUri.value;
-          const filePath = fileUri.replace('share://', '/share/');
-          const deltaFilePath = await convertTtlToDelta(filePath);
-          await addResultFileToTask(taskUri, deltaFilePath);
+          const ttlFile = fileUri.replace('share://', '/share/');
+          const deltaFile = getPathForDeltaFile(ttlFile);
+          await convertTtlToDelta(ttlFile, deltaFile);
+          await addResultFileToTask(taskUri, deltaFile);
         }
         await changeTaskStatus(taskUri, SUCCESSFUL_STATUS);
         res.end('Task completed succesfully');
@@ -64,10 +65,18 @@ app.post('/delta', async (req, res) => {
   }
 });
 
+function getPathForDeltaFile(ttlFile) {
+  const parsedFilePath = path.parse(ttlFile);
+  // unset base such that path.name and path.ext take precedence
+  // See https://nodejs.org/api/path.html#path_path_format_pathobject
+  parsedFilePath.base = undefined;
+  parsedFilePath.ext = '.delta';
+  return path.format(parsedFilePath);
 }
 
-async function convertTtlToDelta(filePath) {
-  const ttl = fs.readFileSync(filePath, { encoding: 'utf-8' });
+async function convertTtlToDelta(ttlFile, deltaFile) {
+  console.log(`Converting TTL content of ${ttlFile} to delta format. Result will be written to ${deltaFile}`);
+  const ttl = fs.readFileSync(ttlFile, { encoding: 'utf-8' });
   const triples = await parseTtl(ttl);
   const inserts = convertTriplesToDelta(triples);
   const deltaMessage = {
@@ -76,11 +85,7 @@ async function convertTtlToDelta(filePath) {
       deletes: []
     }
   };
-  const parsedFilePath = path.parse(filePath);
-  parsedFilePath.ext = 'delta';
-  const deltaFilePath = path.format(parsedFilePath);
-  fs.writeFileSync(deltaFilePath, JSON.stringify(deltaMessage), { encoding: 'utf-8' });
-  return deltaFilePath;
+  fs.writeFileSync(deltaFile, JSON.stringify(deltaMessage), { encoding: 'utf-8' });
 }
 
 function parseTtl(file) {
