@@ -161,6 +161,7 @@ async function addResultFileToTask(taskUri, filePath) {
           dct:format ${sparqlEscapeString(format)};
           nfo:fileSize ${sparqlEscapeInt(size)};
           dbpedia:fileExtension ${sparqlEscapeString(extension)};
+          dct:creator <http://redpencil.data.gift/services/ttl-to-delta-service>;
           dct:created ${sparqlEscapeDateTime(created)} .
         ${sparqlEscapeUri(physicalFileUri)} a nfo:FileDataObject;
           mu:uuid ${sparqlEscapeString(physicalFileUuid)};
