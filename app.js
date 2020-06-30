@@ -79,12 +79,12 @@ async function convertTtlToDelta(ttlFile, deltaFile) {
   const ttl = fs.readFileSync(ttlFile, { encoding: 'utf-8' });
   const triples = await parseTtl(ttl);
   const inserts = convertTriplesToDelta(triples);
-  const deltaMessage = {
-    delta: {
+  const deltaMessage = [
+    {
       inserts,
       deletes: []
     }
-  };
+  ];
   fs.writeFileSync(deltaFile, JSON.stringify(deltaMessage), { encoding: 'utf-8' });
 }
 
