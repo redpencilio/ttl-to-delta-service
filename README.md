@@ -9,7 +9,7 @@ In this guide we are going to convert the file `example.ttl` to the delta format
 
 The first step is to check the path of the file relative to the share directory of the container, for this you have to check the path of your file and what directory is mounted to `/share/` in the `docker-compose.yml` file. In this particular case our path was `/share/example.ttl`.
 
-Once we have the file is a matter to construct a task Object on the sparql database with the correct information
+Once we have the file it's a matter to construct a task Object on the sparql database with the correct information
 
 ```
 PREFIX adms: <http://www.w3.org/ns/adms#>
@@ -30,7 +30,7 @@ INSERT DATA{
 }
 ```
 
-From the code above, the only change you must do is change `<share://example.ttl>` to the correct path.
+From the code above, the only change you must do is change `<share://example.ttl>` to the correct path. The uri of the task must be unique, remember to change it using a uuid generator
 The label and comment properties are just for you to differentiate the different tasks, the numberOfRetries one must be initalized to 0. The status uri correspond with the not initialized status and you must set the task to this status when you create it.
 
 When the service finishes the conversion it will change the status of the task to Completed, and will attach the converted files to the original task using the `prov:generated` property.
