@@ -63,7 +63,7 @@ INSERT DATA{
 
 ## Reference
 
-Task properties:
+### Task properties
 
 | Repo | Uri |
 |---|---|
@@ -80,7 +80,7 @@ Task properties:
 | adms:status | The status of the task |
 | prov:used | The file or files to be converted (see [file data model](https://github.com/mu-semtech/file-service))|
 
-Task statuses:
+### Task statuses:
 
 | Status | Uri |
 |---|---|
