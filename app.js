@@ -200,8 +200,4 @@ async function changeTaskStatus(taskUri, status) {
   `);
 }
 
-app.get('/test', async (req, res) => {
-  res.send('Hello World');
-});
-
 app.use(errorHandler);
