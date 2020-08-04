@@ -1,6 +1,6 @@
 {
   "name": "ttl-to-delta-service",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "main": "app.js",
   "description": "Microservice that converts TTL files to files in the mu-semtech delta format",
   "repository": {
