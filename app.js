@@ -35,13 +35,15 @@ app.post('/delta', async (req, res) => {
       const queryResult = await query(`
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+      PREFIX dct: <http://purl.org/dc/terms/>
       SELECT ?physicalFileUri
       WHERE {
         GRAPH <${TASK_GRAPH}> {
-          ${sparqlEscapeUri(taskUri)} prov:used ?logicalFileUri.
-          ?physicalFileUri nie:dataSource ?logicalFileUri.
+          ${sparqlEscapeUri(taskUri)} prov:used ?logicalFileUri .
+          ?physicalFileUri nie:dataSource ?logicalFileUri ;
+            dct:created ?created .
         }
-      }`);
+      } ORDER BY ?created`);
       const fileUris = queryResult.results.bindings;
       try {
         for (let i = 0; i < fileUris.length; i++) {
